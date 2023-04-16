@@ -13,10 +13,10 @@ namespace Deadlock.Controllers
             _logger = logger;
         }
 
-        public async Task<ActionResult> Index()
+        public ActionResult Index()
         {
-            var githubTask = await GetGitHubStringAsync();
-            var githubString = githubTask.ToString();
+            var githubTask = GetGitHubStringAsync();
+            //var githubString = githubTask.Result.ToString(); //Deadlock
 
             return View();
         }

@@ -1,5 +1,6 @@
 using Example.Service;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 
 namespace Example.Controllers
 {
@@ -39,14 +40,15 @@ namespace Example.Controllers
         {
             var client = new HttpClient();
             Task<string> getStringTask = client.GetStringAsync("https://docs.microsoft.com/dotnet");
-            DoIndepentWork();
-            string contents = await getStringTask;
+            await DoIndepentWork();
+            string contents =  getStringTask.Result;
             return contents.Length;
         }
 
-        void DoIndepentWork()
+        private async Task<string> DoIndepentWork()
         {
-            Console.WriteLine("Working...");
+            await Task.Delay(1000);
+            return "Hello";
         }
 
         [Route("URLDeadlock")]
@@ -55,9 +57,9 @@ namespace Example.Controllers
         {
             
             var rs = SomeMethod(url).Result.ToString();
-            DoIndepentWork();
+            var val = DoIndepentWork().Result;
             //var download = request.Content.ReadAsStringAsync().Result;
-            return "fasd";
+            return "{0} {1}, ";
         }
 
         [Route("AvoidReturnVoid")]
@@ -145,6 +147,53 @@ namespace Example.Controllers
             Task.WaitAll(Enumerable.Range(0, 10).Select(x => Ros()).ToArray());
 
             return new string[] { "value1", "value2" }; // This will never execute
+        }
+
+        [Route("HaveDeadlock")]
+        [HttpGet]
+        public async Task<string> GetDL()
+        {
+            var json = await GetJsonAsync();
+            return json.ToString();
+        }
+
+        //[Route("HaveDeadlock")]
+        //[HttpGet]
+        //public string GetDL()
+        //{
+        //    var jsonTask = GetJsonAsync();
+        //    return jsonTask.ToString();
+        //}
+
+        public static async Task<string> GetJsonAsync()
+        {
+            // (real-world code shouldn't use HttpClient in a using block; this is just example code)
+            var client = new HttpClient();
+            //var jsonString = await client.GetStringAsync(uri);
+            var jsonString = await client.GetStringAsync("https://api.github.com/zen").ConfigureAwait(false);
+            return jsonString;
+            
+        }
+
+        [Route("GetAwaiter")]
+        [HttpGet]
+        public async Task<string> GetAwaiter()
+        {
+            // 1
+            RunSomeTask().Wait();
+
+            // 2
+            //RunSomeTask().GetAwaiter().GetResult();
+            //await RunSomeTask();
+
+            return "hello";
+        }
+
+        private static async Task RunSomeTask()
+        {
+            await Task.Delay(200);
+
+            throw new Exception("Failed because of some reason");
         }
     }
 }
